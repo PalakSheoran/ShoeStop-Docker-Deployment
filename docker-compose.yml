@@ -1,0 +1,68 @@
+﻿services:
+  mongodb:
+    image: mongo:6.0
+    container_name: shoestop-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=shoestop
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - shoestop-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: shoestop-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - port=5000
+      - mongoURI=${MONGO_URI:-mongodb://mongodb:27017/shoestop}
+      - JWT_SECRET=${JWT_SECRET:-mysecret}
+      - expiry=${JWT_EXPIRY:-30d}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - shoestop-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://localhost:5000}
+    container_name: shoestop-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - shoestop-network
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+    driver: local
+
+networks:
+  shoestop-network:
+    driver: bridge

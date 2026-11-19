@@ -1,0 +1,17 @@
+# Exclude dependencies — will be installed inside the container
+node_modules
+
+# Never bake secrets into the image; pass env vars at runtime via docker-compose
+.env
+
+# Version control metadata not needed in image
+.git
+.gitignore
+
+# npm debug logs
+npm-debug.log
+npm-debug.log*
+
+# OS / editor artifacts
+.DS_Store
+Thumbs.db
