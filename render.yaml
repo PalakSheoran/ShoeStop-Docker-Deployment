@@ -1,0 +1,40 @@
+﻿services:
+  # -------------------------------------------------------------
+  # ShoeStop Backend Web Service (Docker Container)
+  # -------------------------------------------------------------
+  - type: web
+    name: shoestop-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: port
+        value: 5000
+      - key: PORT
+        value: 5000
+      - key: mongoURI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: expiry
+        value: 30d
+
+  # -------------------------------------------------------------
+  # ShoeStop Frontend Web Service (Docker Container with Nginx)
+  # -------------------------------------------------------------
+  - type: web
+    name: shoestop-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    plan: free
+    region: oregon
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: shoestop-backend
+          type: web
+          property: host
